@@ -1,48 +1,44 @@
 <script>
 $('#moveNorth').click(() => {
-  $("#gameLog").append('CALLED MOVE NORTH \n');
   $.ajax({
     url: `/moveNorth`,
     type: "GET",
     success: res => {
       $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n');
+      $("#gameLog").append('\n\n');
     }
   });
 });
   
 $('#moveSouth').click(() => {
-  $("#gameLog").append('CALLED MOVE SOUTH \n');
   $.ajax({
     url: `/moveSouth`,
     type: "GET",
     success: res => {
       $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n');
+      $("#gameLog").append('\n\n');
     }
   });
 });
   
 $('#moveWest').click(() => {
-  $("#gameLog").append('CALLED MOVE WEST \n');
   $.ajax({
     url: `/moveWest`,
     type: "GET",
     success: res => {
       $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n');
+      $("#gameLog").append('\n\n');
     }
   });
 });
   
 $('#moveEast').click(() => {
-  $("#gameLog").append('CALLED MOVE EAST \n');
   $.ajax({
     url: `/moveEast`,
     type: "GET",
     success: res => {
       $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n');
+      $("#gameLog").append('\n\n');
     }
   });
 });
