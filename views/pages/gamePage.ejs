@@ -5,12 +5,19 @@
 </head>
 
 <body>
+  <!--GAMEPLAY LOG-->
   <textarea rows="10" cols="75" id="gameLog" readonly></textarea>
 
-  <button id="moveNorth">MOVE NORTH</button>
-  <button id="moveWest">MOVE WEST</button>
-  <button id="moveEast">MOVE EAST</button>
-  <button id="moveSouth">MOVE SOUTH</button>
+  <!--DIV CONTAINER FOR MOVEMENT BUTTONS-->
+  <div>
+    <button id="moveNorth">MOVE NORTH</button>
+    <div>
+      <button id="moveWest">MOVE WEST</button>
+      <button id="moveEast">MOVE EAST</button>
+    </div>
+    <button id="moveSouth">MOVE SOUTH</button>
+  </div>
+  
 </body>
   <% include ../partials/scripts.ejs %>
 </html>
