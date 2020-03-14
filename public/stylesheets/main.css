@@ -4,5 +4,6 @@ body {
   background: darkgray;
   justify-content: center;
   text-align: center;
-  width: 50%;
+  align-items: center;
+  align-content: center;
 }
