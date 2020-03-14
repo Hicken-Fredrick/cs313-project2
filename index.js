@@ -1,9 +1,9 @@
-require('dotenv').config();
 const express = require('express')
 const path = require('path')
 const PORT = process.env.PORT || 5000
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
+require('dotenv').config();
 const user = 1;
 
 const connectionString = process.env.DATABASE_URL;
@@ -15,7 +15,6 @@ express()
   .set('views', path.join(__dirname, 'views'))
   .set('view engine', 'ejs')
   .get('/', (req, res) => res.render('pages/gamePage'))
-  .listen(PORT, () => console.log(`Listening on ${ PORT }`))
   .get('/moveNorth', (req, res)=>{
     pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
         if(err){
@@ -25,4 +24,8 @@ express()
             res.json(result.rows)
         }
     })
-  })
+  })  
+  
+
+//always last
+  .listen(PORT, () => console.log(`Listening on ${ PORT }`))
