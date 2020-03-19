@@ -14,192 +14,158 @@ express()
   .use(express.static(path.join(__dirname, 'public')))
   .set('views', path.join(__dirname, 'views'))
   .set('view engine', 'ejs')
-  .get('/', (req, res) => res.render('pages/gamePage'))
-  .get('/moveNorth', (req, res)=>{ 
-    pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-      if(err){
-        return console.error(err)
-      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-        res.locals.location = result.rows[0].currentlocation
-        console.log(res.locals.location)
-        pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.location, (err, result)=>{
-          if(err){
-            return console.error(err)
-          }else{
-//            console.log('location info: ', JSON.stringify(result.rows))
-            res.locals.info = result.rows[0].nodetext
-            res.locals.move = result.rows[0].nodenorth
-            if(res.locals.move == null){
-               res.send("THE WAY IS BLOCKED!")
-            }else{
-               pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move, (err, result)=>{
-//                 console.log('location info: ', JSON.stringify(result.rows))
-                 res.send(result.rows[0].nodetext)
-               })
-            }
-          }
-        })
-      }
-    })
+  .get('/', (req, res) => {
+    (async () => {
+      const client = await pool.connect()
+        try {
+          //verify the users current location
+          var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+          console.log('location: ', JSON.stringify(result.rows))
+          
+          //save the location of the player then call the node they are on to output start text
+          res.locals.locationNum = result.rows[0].currentlocation
+          console.log('location: ', res.locals.locationNum)
+          result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+          
+          //send data back in with page render to let player know where they are on start
+          res.render('pages/gamePage', {locName: result.rows[0].nodename, locText: result.rows[0].nodetext})
+        } finally {
+          //release client
+          client.release()
+        }
+      })().catch(err => console.log(err.stack))
   })
+//handle the move north button call
   .get('/moveNorth', (req, res)=>{ 
-    pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-      if(err){
-        return console.error(err)
-      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-        res.locals.location = result.rows[0].currentlocation
-        console.log(res.locals.location)
-        pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.location, (err, result)=>{
-          if(err){
-            return console.error(err)
-          }else{
-//            console.log('location info: ', JSON.stringify(result.rows))
-            res.locals.info = result.rows[0].nodetext
-            res.locals.move = result.rows[0].nodenorth
-            if(res.locals.move == null){
-               res.send("THE WAY IS BLOCKED!")
-            }else{
-               pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move, (err, result)=>{
-//                 console.log('location info: ', JSON.stringify(result.rows))
-                 res.send(result.rows[0].nodetext)
-               })
-            }
-          }
-        })
+    (async () => {
+      const client = await pool.connect()
+      try {
+        //verify the users current location
+        var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+        console.log('location: ', JSON.stringify(result.rows))
+          
+        //save the location of the player
+        res.locals.locationNum = result.rows[0].currentlocation
+        console.log('location: ', res.locals.locationNum)
+        result = await client.query(`SELECT nodenorth FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+        res.locals.move = result.rows[0].nodenorth
+          
+        //check if move is possible
+        if(res.locals.move == null){
+          //unable to move, send back failure message
+          res.send({locName:"Blocked", locText: "The way is shut. It was made by those who are Dead, and the Dead keep it, until the time comes. The way is shut."})
+        }else{
+          //move is possible, move player and get info
+          client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
+          result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+            
+          //send back data on where the player moved to
+          res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext})
+        }
+      }finally {
+        //release client
+        client.release()
       }
-    })
-  })
+    })().catch(err => console.log(err.stack))
+ })
+//handle the move south button call
   .get('/moveSouth', (req, res)=>{ 
-    pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-      if(err){
-        return console.error(err)
-      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-        res.locals.location = result.rows[0].currentlocation
-        console.log(res.locals.location)
-        pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.location, (err, result)=>{
-          if(err){
-            return console.error(err)
-          }else{
-//            console.log('location info: ', JSON.stringify(result.rows))
-            res.locals.info = result.rows[0].nodetext
-            res.locals.move = result.rows[0].nodesouth
-            if(res.locals.move == null){
-               res.send("THE WAY IS BLOCKED!")
-            }else{
-               pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move, (err, result)=>{
-//                 console.log('location info: ', JSON.stringify(result.rows))
-                 res.send(result.rows[0].nodetext)
-               })
-            }
-          }
-        })
+    (async () => {
+      const client = await pool.connect()
+      try {
+        //verify the users current location
+        var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+        console.log('location: ', JSON.stringify(result.rows))
+          
+        //save the location of the player
+        res.locals.locationNum = result.rows[0].currentlocation
+        console.log('location: ', res.locals.locationNum)
+        result = await client.query(`SELECT nodesouth FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+        res.locals.move = result.rows[0].nodesouth
+          
+        //check if move is possible
+        if(res.locals.move == null){
+          //unable to move, send back failure message
+          res.send({locName:"Blocked", locText: "The way is shut. It was made by those who are Dead, and the Dead keep it, until the time comes. The way is shut."})
+        }else{
+          //move is possible, move player and get info
+          client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
+          result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+            
+          //send back data on where the player moved to
+          res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext})
+        }
+      }finally {
+        //release client
+        client.release()
       }
-    })
+    })().catch(err => console.log(err.stack))
   })
+//handle the move west button call
   .get('/moveWest', (req, res)=>{ 
-    pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-      if(err){
-        return console.error(err)
-      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-        res.locals.location = result.rows[0].currentlocation
-        console.log(res.locals.location)
-        pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.location, (err, result)=>{
-          if(err){
-            return console.error(err)
-          }else{
-//            console.log('location info: ', JSON.stringify(result.rows))
-            res.locals.info = result.rows[0].nodetext
-            res.locals.move = result.rows[0].nodewest
-            if(res.locals.move == null){
-               res.send("THE WAY IS BLOCKED!")
-            }else{
-               pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move, (err, result)=>{
-//                 console.log('location info: ', JSON.stringify(result.rows))
-                 res.send(result.rows[0].nodetext)
-               })
-            }
-          }
-        })
+    (async () => {
+      const client = await pool.connect()
+      try {
+        //verify the users current location
+        var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+        console.log('location: ', JSON.stringify(result.rows))
+          
+        //save the location of the player
+        res.locals.locationNum = result.rows[0].currentlocation
+        console.log('location: ', res.locals.locationNum)
+        result = await client.query(`SELECT nodewest FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+        res.locals.move = result.rows[0].nodewest
+          
+        //check if move is possible
+        if(res.locals.move == null){
+          //unable to move, send back failure message
+          res.send({locName:"Blocked", locText: "The way is shut. It was made by those who are Dead, and the Dead keep it, until the time comes. The way is shut."})
+        }else{
+          //move is possible, move player and get info
+          client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
+          result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+            
+          //send back data on where the player moved to
+          res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext})
+        }
+      }finally {
+        //release client
+        client.release()
       }
-    })
+    })().catch(err => console.log(err.stack))
   })
+//handle the move east button call
   .get('/moveEast', (req, res)=>{ 
-    pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-      if(err){
-        return console.error(err)
-      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-        res.locals.location = result.rows[0].currentlocation
-        console.log(res.locals.location)
-        pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.location, (err, result)=>{
-          if(err){
-            return console.error(err)
-          }else{
-//            console.log('location info: ', JSON.stringify(result.rows))
-            res.locals.info = result.rows[0].nodetext
-            res.locals.move = result.rows[0].nodeeast
-            if(res.locals.move == null){
-               res.send("THE WAY IS BLOCKED!")
-            }else{
-               pool.query(`SELECT * FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move, (err, result)=>{
-//                 console.log('location info: ', JSON.stringify(result.rows))
-                 res.send(result.rows[0].nodetext)
-               })
-            }
-          }
-        })
+    (async () => {
+      const client = await pool.connect()
+      try {
+        //verify the users current location
+        var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+        console.log('location: ', JSON.stringify(result.rows))
+          
+        //save the location of the player
+        res.locals.locationNum = result.rows[0].currentlocation
+        console.log('location: ', res.locals.locationNum)
+        result = await client.query(`SELECT nodeeast FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+        res.locals.move = result.rows[0].nodeeast
+          
+        //check if move is possible
+        if(res.locals.move == null){
+          //unable to move, send back failure message
+          res.send({locName:"Blocked", locText: "The way is shut. It was made by those who are Dead, and the Dead keep it, until the time comes. The way is shut."})
+        }else{
+          //move is possible, move player and get info
+          client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
+          result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+            
+          //send back data on where the player moved to
+          res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext})
+        }
+      }finally {
+        //release client
+        client.release()
       }
-    })
+    })().catch(err => console.log(err.stack))
   })
   //always last
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
-
-  
-//  async function getLocation(req, res, next) {
-//    await pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-//      if(err){
-//        return console.error(err)
-//      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-//        res.locals.location = result.rows[0].currentlocation
-//        console.log(res.locals.location)
-//      }
-//    })
-//    await next();
-//  }
-//
-//  async function sendLocation(req, res) {
-//    //await sleep(1000);
-//    console.log(res.locals.location)
-//    res.json(res.locals.location)
-//    res.end()
-//  }
-//
-//  //let sleep = require('util').promisify(setTimeout);
-//
-//let myFirstPromise = new Promise((resolve, reject) => {
-//  // We call resolve(...) when what we were doing asynchronously was successful, and reject(...) when it failed.
-//  // In this example, we use setTimeout(...) to simulate async code. 
-//  // In reality, you will probably be using something like XHR or an HTML5 API.
-//  setTimeout( function() {
-//    resolve(pool.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user, (err, result)=>{
-//      if(err){
-//        return console.error(err)
-//      }else{
-//        console.log('location: ', JSON.stringify(result.rows))
-//        res.locals.location = result.rows[0].currentlocation
-//        console.log(res.locals.location)
-//      }
-//    }))  // Yay! Everything went well!
-//  }, 250) 
-//}) 
-//
-//myFirstPromise.then((successMessage) => {
-//  // successMessage is whatever we passed in the resolve(...) function above.
-//  // It doesn't have to be a string, but if it is only a succeed message, it probably will be.
-//  console.log("Yay! " + successMessage) 
-//});

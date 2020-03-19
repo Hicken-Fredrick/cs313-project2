@@ -1,46 +1,71 @@
 <script>
+//handle north movement button
 $('#moveNorth').click(() => {
   $.ajax({
     url: `/moveNorth`,
     type: "GET",
     success: res => {
-      $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n\n');
+      $("#gameLog").append('\n');
+      $("#gameLog").append(res.locName);
+      $("#gameLog").append('\n');
+      $("#gameLog").append('    ' + res.locText);
+      $("#gameLog").append('\n');
+      scrollToBottom();
     }
   });
 });
-  
+
+//handle south movement button
 $('#moveSouth').click(() => {
   $.ajax({
     url: `/moveSouth`,
     type: "GET",
     success: res => {
-      $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n\n');
+      $("#gameLog").append('\n');
+      $("#gameLog").append(res.locName);
+      $("#gameLog").append('\n');
+      $("#gameLog").append('    ' + res.locText);
+      $("#gameLog").append('\n');
+      scrollToBottom();
     }
   });
 });
-  
+
+//handle west movement button
 $('#moveWest').click(() => {
   $.ajax({
     url: `/moveWest`,
     type: "GET",
     success: res => {
-      $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n\n');
+      $("#gameLog").append('\n');
+      $("#gameLog").append(res.locName);
+      $("#gameLog").append('\n');
+      $("#gameLog").append('    ' + res.locText);
+      $("#gameLog").append('\n');
+      scrollToBottom();
     }
   });
 });
-  
+
+//handle east movement button
 $('#moveEast').click(() => {
   $.ajax({
     url: `/moveEast`,
     type: "GET",
     success: res => {
-      $("#gameLog").append(JSON.stringify(res));
-      $("#gameLog").append('\n\n');
+      $("#gameLog").append('\n');
+      $("#gameLog").append(res.locName);
+      $("#gameLog").append('\n');
+      $("#gameLog").append('    ' + res.locText);
+      $("#gameLog").append('\n');
+      scrollToBottom();
     }
   });
 });
+
+//keep the game area scrolled to bottom
+function scrollToBottom() {
+  $('#gameLog').scrollTop($('#gameLog')[0].scrollHeight);
+}
 
 </script>
