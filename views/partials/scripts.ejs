@@ -1,9 +1,11 @@
 <script>
+// !!  MOVEMENT HANDLERS BELOW  !!
 //handle north movement button
 $('#moveNorth').click(() => {
   $.ajax({
     url: `/moveNorth`,
     type: "GET",
+    data: {"direction": "north"},
     success: res => {
       $("#gameLog").append('\n');
       $("#gameLog").append(res.locName);
@@ -20,6 +22,7 @@ $('#moveSouth').click(() => {
   $.ajax({
     url: `/moveSouth`,
     type: "GET",
+    data: {"direction": "south"},
     success: res => {
       $("#gameLog").append('\n');
       $("#gameLog").append(res.locName);
@@ -36,6 +39,7 @@ $('#moveWest').click(() => {
   $.ajax({
     url: `/moveWest`,
     type: "GET",
+    data: {"direction": "west"},
     success: res => {
       $("#gameLog").append('\n');
       $("#gameLog").append(res.locName);
@@ -52,6 +56,7 @@ $('#moveEast').click(() => {
   $.ajax({
     url: `/moveEast`,
     type: "GET",
+    data: {"direction": "east"},
     success: res => {
       $("#gameLog").append('\n');
       $("#gameLog").append(res.locName);
@@ -63,9 +68,14 @@ $('#moveEast').click(() => {
   });
 });
 
+// !!  EVENT HANDLERS BELOW  !!
+  
+
+// !!  MISC / UTILITY HANDLERS BELOW  !!
 //keep the game area scrolled to bottom
 function scrollToBottom() {
   $('#gameLog').scrollTop($('#gameLog')[0].scrollHeight);
 }
+  
 
 </script>
