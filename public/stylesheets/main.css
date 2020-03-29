@@ -7,3 +7,16 @@ body {
   align-items: center;
   align-content: center;
 }
+
+body #gameEvents {
+  display: flex;
+  flex-direction: row;
+  margin: 5px;
+  padding: 5px;
+}
+
+body #gameEvents button {
+  padding: 5px;
+  margin: 5px;
+  background: #778899;
+}

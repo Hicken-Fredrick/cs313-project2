@@ -16,13 +16,19 @@ express()
   .set('view engine', 'ejs')
   .use(bodyParser.urlencoded({ extended: false }))
   .use(bodyParser.json())
+
+//handle intial page call
   .get('/', startUp)
+
 //handle the move north button call
   .get('/moveNorth', getLocation, moveAndSend)
+
 //handle the move south button call
   .get('/moveSouth', getLocation, moveAndSend)
+
 //handle the move west button call
   .get('/moveWest', getLocation, moveAndSend)
+
 //handle the move east button call
   .get('/moveEast', getLocation, moveAndSend)
 
@@ -40,9 +46,12 @@ async function startUp (req, res){
       res.locals.locationNum = result.rows[0].currentlocation
       console.log('location: ', res.locals.locationNum)
       result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+      
+      //get actions on current location
+      actions = await client.query(`SELECT eventid, eventaction FROM projecttwo.mapevent WHERE mapnodeconnection = ` + res.locals.locationNum + ` ORDER BY eventid`)
 
       //send data back in with page render to let player know where they are on start
-      res.render('pages/gamePage', {locName: result.rows[0].nodename, locText: result.rows[0].nodetext})
+      res.render('pages/gamePage', {locName: result.rows[0].nodename, locText: result.rows[0].nodetext, actions: actions.rows})
     } finally {
       //release client
       client.release()
@@ -76,14 +85,22 @@ async function getLocation (req, res, next) {
     case 'west':
       res.locals.move = result.rows[0].nodewest
       break;
+    default:
+      res.locals.move = res.locals.locationNum
   }
   
+  //move on
   next()
 }
 
+async function getActions (req, res, next) {
+  
+}
+
 async function moveAndSend (req, res) {
-  const client = await pool.connect()
   try {
+    //get client
+    const client = await pool.connect()
     //check if move is possible
     if(res.locals.move == null){
       //unable to move, send back failure message
@@ -92,12 +109,12 @@ async function moveAndSend (req, res) {
       //move is possible, move player and get info
       client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
       result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
-
+      
       //send back data on where the player moved to
-      res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext})
+      res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext, actions: result.rows})
+      res.end()
     }
-  }finally {
-    //release client
-    client.release()
+  }catch (error) {
+    console.log(error) 
   }
 }

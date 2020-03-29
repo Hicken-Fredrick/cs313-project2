@@ -24,8 +24,11 @@
     <button id="moveSouth">MOVE SOUTH</button>
   </div>
   
-  <div id="events">
-    
+  <!--DIV CONTAINER FOR ACTION BUTTONS-->
+  <div id="gameEvents">
+    <% actions.forEach(function(action, i){ %>
+    <button id="<%= actions[i].eventid %>" class="event"><%= actions[i].eventaction %></button>
+    <% }) %>
   </div>
 </body>
   <% include ../partials/scripts.ejs %>

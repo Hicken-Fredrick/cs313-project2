@@ -7,11 +7,10 @@ $('#moveNorth').click(() => {
     type: "GET",
     data: {"direction": "north"},
     success: res => {
-      $("#gameLog").append('\n');
-      $("#gameLog").append(res.locName);
-      $("#gameLog").append('\n');
-      $("#gameLog").append('    ' + res.locText);
-      $("#gameLog").append('\n');
+      if(res.actions != null) {
+        writeGameActions(res.actions[0]);
+      }
+      writeGameLog(res.locName, res.locText);
       scrollToBottom();
     }
   });
@@ -24,11 +23,10 @@ $('#moveSouth').click(() => {
     type: "GET",
     data: {"direction": "south"},
     success: res => {
-      $("#gameLog").append('\n');
-      $("#gameLog").append(res.locName);
-      $("#gameLog").append('\n');
-      $("#gameLog").append('    ' + res.locText);
-      $("#gameLog").append('\n');
+      if(res.actions != null) {
+        writeGameActions(res.actions[0]);
+      }
+      writeGameLog(res.locName, res.locText);
       scrollToBottom();
     }
   });
@@ -41,11 +39,10 @@ $('#moveWest').click(() => {
     type: "GET",
     data: {"direction": "west"},
     success: res => {
-      $("#gameLog").append('\n');
-      $("#gameLog").append(res.locName);
-      $("#gameLog").append('\n');
-      $("#gameLog").append('    ' + res.locText);
-      $("#gameLog").append('\n');
+      if(res.actions != null) {
+        writeGameActions(res.actions[0]);
+      }
+      writeGameLog(res.locName, res.locText);
       scrollToBottom();
     }
   });
@@ -58,24 +55,46 @@ $('#moveEast').click(() => {
     type: "GET",
     data: {"direction": "east"},
     success: res => {
-      $("#gameLog").append('\n');
-      $("#gameLog").append(res.locName);
-      $("#gameLog").append('\n');
-      $("#gameLog").append('    ' + res.locText);
-      $("#gameLog").append('\n');
+      if(res.actions != null) {
+        writeGameActions(res.actions[0]);
+      }
+      writeGameLog(res.locName, res.locText);
+      scrollToBottom();
+    }
+  });
+});
+  
+$('.event').click(() => {
+  $.ajax({
+    url: ``,
+    type: "GET",
+    data: {"": ""},
+    success: res => {
+      
       scrollToBottom();
     }
   });
 });
 
-// !!  EVENT HANDLERS BELOW  !!
-  
+// !!  MODULAR CODE BELOW  !!
+function writeGameLog(locName, locText) {
+  $("#gameLog").append('\n');
+  $("#gameLog").append(locName);
+  $("#gameLog").append('\n');
+  $("#gameLog").append('    ' + locText);
+  $("#gameLog").append('\n'); 
+}
+
+function writeGameActions(actions) {
+  $("#gameEvents").append('<p>' + actions.nodename + '</p>');
+}  
 
 // !!  MISC / UTILITY HANDLERS BELOW  !!
 //keep the game area scrolled to bottom
 function scrollToBottom() {
   $('#gameLog').scrollTop($('#gameLog')[0].scrollHeight);
 }
-  
+
+
 
 </script>
