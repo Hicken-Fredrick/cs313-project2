@@ -63,14 +63,15 @@ $('#moveEast').click(() => {
     }
   });
 });
-  
-$('.event').click(() => {
+
+//handle all event calls SIDE NOTE ARROW FUNCTION AND THIS DON"T LIKE EACH OTHER  
+$('#gameEvents').on("click", ".event", function (){
   $.ajax({
-    url: ``,
+    url: `/action`,
     type: "GET",
-    data: {"": ""},
+    data: {"id": this.id},
     success: res => {
-      
+      writeGameLog(res.locName, res.locText);
       scrollToBottom();
     }
   });

@@ -32,13 +32,16 @@ express()
 //handle the move east button call
   .get('/moveEast', getLocation, moveAndSend)
 
+//handle action calls
+  .get('/action', handleAction)
+
 //always last
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
 
 async function startUp (req, res){
   const client = await pool.connect()
     try {
-      //verify the users current location
+      //grab last location saved
       var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
       console.log('location: ', JSON.stringify(result.rows))
 
@@ -93,8 +96,32 @@ async function getLocation (req, res, next) {
   next()
 }
 
-async function getActions (req, res, next) {
-  
+async function handleAction (req, res) {
+  const client = await pool.connect()
+    try {
+      //verify the users current location
+      var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
+      console.log('location: ', JSON.stringify(result.rows))
+      
+      //grab actions
+      actions = await client.query(`SELECT eventid, eventaction, eventtext FROM projecttwo.mapevent WHERE mapnodeconnection = ` + result.rows[0].currentlocation + ` ORDER BY eventid`)
+      
+      //select action called by user
+      var action = {locName: "ERROR", locText: "Cannot find action called"}
+      actions.rows.forEach(function(act, i){
+        if(actions.rows[i].eventid == req.query.id){
+          action = {locName: actions.rows[i].eventaction, locText: actions.rows[i].eventtext}
+        }
+      })
+      
+      //send data back to user
+      res.send(action)
+      res.end()
+      
+    }finally{
+      //release client
+      client.release()
+    }
 }
 
 async function moveAndSend (req, res) {
@@ -108,7 +135,9 @@ async function moveAndSend (req, res) {
     }else{
       //move is possible, move player and get info
       client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
+      //get desitnation info
       result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+      //get action info on destination
       actions = await client.query(`SELECT eventid, eventaction FROM projecttwo.mapevent WHERE mapnodeconnection = ` + res.locals.move + ` ORDER BY eventid`)
       
       //send back data on where the player moved to
