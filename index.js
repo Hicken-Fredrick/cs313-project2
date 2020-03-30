@@ -109,9 +109,10 @@ async function moveAndSend (req, res) {
       //move is possible, move player and get info
       client.query(`UPDATE projecttwo.game SET currentlocation = ` + res.locals.move + ` WHERE playerid  = ` + user)
       result = await client.query(`SELECT nodename, nodetext FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.move)
+      actions = await client.query(`SELECT eventid, eventaction FROM projecttwo.mapevent WHERE mapnodeconnection = ` + res.locals.move + ` ORDER BY eventid`)
       
       //send back data on where the player moved to
-      res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext, actions: result.rows})
+      res.send({locName:result.rows[0].nodename, locText: result.rows[0].nodetext, actions: actions.rows})
       res.end()
     }
   }catch (error) {

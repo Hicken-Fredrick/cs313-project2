@@ -8,7 +8,7 @@ $('#moveNorth').click(() => {
     data: {"direction": "north"},
     success: res => {
       if(res.actions != null) {
-        //writeGameActions(res.actions[0]);
+        writeGameActions(res.actions);
       }
       writeGameLog(res.locName, res.locText);
       scrollToBottom();
@@ -24,7 +24,7 @@ $('#moveSouth').click(() => {
     data: {"direction": "south"},
     success: res => {
       if(res.actions != null) {
-        //writeGameActions(res.actions[0]);
+        writeGameActions(res.actions);
       }
       writeGameLog(res.locName, res.locText);
       scrollToBottom();
@@ -40,7 +40,7 @@ $('#moveWest').click(() => {
     data: {"direction": "west"},
     success: res => {
       if(res.actions != null) {
-        //writeGameActions(res.actions[0]);
+        writeGameActions(res.actions);
       }
       writeGameLog(res.locName, res.locText);
       scrollToBottom();
@@ -56,7 +56,7 @@ $('#moveEast').click(() => {
     data: {"direction": "east"},
     success: res => {
       if(res.actions != null) {
-        //writeGameActions(res.actions[0]);
+        writeGameActions(res.actions);
       }
       writeGameLog(res.locName, res.locText);
       scrollToBottom();
@@ -86,7 +86,10 @@ function writeGameLog(locName, locText) {
 }
 
 function writeGameActions(actions) {
-  $("#gameEvents").append('<p>' + actions.nodename + '</p>');
+  $("#gameEvents").html('')
+  actions.forEach(function(action, i){
+    $("#gameEvents").append('<button id=' + actions[i].eventid + ' class="event">' + actions[i].eventaction + '</button>');
+   })
 }  
 
 // !!  MISC / UTILITY HANDLERS BELOW  !!
