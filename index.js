@@ -91,7 +91,7 @@ async function getLocation (req, res, next) {
     default:
       res.locals.move = res.locals.locationNum
   }
-  
+  client.release()
   //move on
   next()
 }
@@ -125,9 +125,10 @@ async function handleAction (req, res) {
 }
 
 async function moveAndSend (req, res) {
+  //get client
+  const client = await pool.connect()
+  
   try {
-    //get client
-    const client = await pool.connect()
     //check if move is possible
     if(res.locals.move == null){
       //unable to move, send back failure message
@@ -146,5 +147,8 @@ async function moveAndSend (req, res) {
     }
   }catch (error) {
     console.log(error) 
+  }finally{
+      //release client
+      client.release()
   }
 }
