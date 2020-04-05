@@ -33,7 +33,7 @@ express()
   .get('/moveEast', getLocation, moveAndSend)
 
 //handle action calls
-  .get('/action', handleAction)
+  .get('/action', handleAction, triggerAction)
 
 //always last
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
@@ -91,37 +91,110 @@ async function getLocation (req, res, next) {
     default:
       res.locals.move = res.locals.locationNum
   }
+  //release client
   client.release()
   //move on
   next()
 }
 
-async function handleAction (req, res) {
+async function handleAction (req, res, next) {
+  //checkout client
   const client = await pool.connect()
-    try {
-      //verify the users current location
-      var result = await client.query(`SELECT currentlocation FROM projecttwo.game WHERE playerid = ` + user)
-      console.log('location: ', JSON.stringify(result.rows))
-      
-      //grab actions
-      actions = await client.query(`SELECT eventid, eventaction, eventtext FROM projecttwo.mapevent WHERE mapnodeconnection = ` + result.rows[0].currentlocation + ` ORDER BY eventid`)
-      
-      //select action called by user
-      var action = {locName: "ERROR", locText: "Cannot find action called"}
-      actions.rows.forEach(function(act, i){
-        if(actions.rows[i].eventid == req.query.id){
-          action = {locName: actions.rows[i].eventaction, locText: actions.rows[i].eventtext}
-        }
-      })
-      
-      //send data back to user
-      res.send(action)
+  try {
+    //verify the users current location
+    var result = await client.query(`SELECT currentlocation, invid FROM projecttwo.game WHERE playerid = ` + user)
+    console.log('location: ', JSON.stringify(result.rows))
+    
+    //save invid to use later if needed
+    res.locals.invid = result.rows[0].invid
+
+    //grab actions
+    var actions = await client.query(`SELECT eventid, eventaction, eventtextsuccess, eventtextfail, eventreaction, eventitem  FROM projecttwo.mapevent WHERE mapnodeconnection = ` + result.rows[0].currentlocation + ` ORDER BY eventid`)
+    
+    //select action called by user
+    var action = {locName: "ERROR", locText: "Cannot find action called"}
+    //event exists on location
+    var eventExist = 0;
+    actions.rows.forEach(function(act, i){
+      if(actions.rows[i].eventid == req.query.id){
+        res.locals.actionInfo = actions.rows[i]
+        eventExist = 1;
+      }
+    })
+    
+    //send data back to user
+    if(eventExist){
+      next()
+    }else{
+      res.send({locName: "ERROR", locText: "Cannot find action called"})
       res.end()
-      
-    }finally{
-      //release client
-      client.release()
     }
+
+  }finally{
+    //release client
+    client.release()
+  }
+}
+
+async function triggerAction (req, res) {
+  //checkout client
+  const client = await pool.connect()
+  try {
+    /**********
+    * !! EVENT REACTION KEY !!
+    * 1 - ACQUIRE ITEM (check if item is already in inv)
+    * 2 - CHECK FOR ITEM .eventitem IS ACQUIRED .eventitemtwo IS NEEDED
+    * 3 - SUCCESS if/if not (IF item do X IF NOT item do Y)
+    * 4 - DO NOTHING event doesn't do anythying send back text (red herring event)
+    **********/
+    switch(res.locals.actionInfo.eventreaction) {
+      case 1:
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+
+        if(inventory.rowCount > 0){
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextfail})
+          res.end()
+        }else{
+          client.query(`INSERT INTO projecttwo.invtoitem (invid, itemid) VALUES (` + res.locals.invid + `, ` + res.locals.actionInfo.eventitem + `)`)
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
+          res.end()  
+        }
+        break;
+      case 2:
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+        
+        if(inventory.rowCount > 0){
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
+          res.end()
+        }else{
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextfail})
+          res.end()  
+        }
+        break;  
+      case 3:
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+        
+        if(inventory.rowCount > 0){
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
+          res.end()
+        }else{
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextfail})
+          res.end()  
+        }
+        break;
+      case 4:
+        res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
+        res.end()
+        break;
+      default:
+        res.send({locName: "ERROR", locText: "Cannot find action called"})
+        res.end()
+        break;
+    }
+  }finally{
+    //release client
+    client.release()
+  }
 }
 
 async function moveAndSend (req, res) {
