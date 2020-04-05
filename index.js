@@ -109,7 +109,7 @@ async function handleAction (req, res, next) {
     res.locals.invid = result.rows[0].invid
 
     //grab actions
-    var actions = await client.query(`SELECT eventid, eventaction, eventtextsuccess, eventtextfail, eventreaction, eventitem  FROM projecttwo.mapevent WHERE mapnodeconnection = ` + result.rows[0].currentlocation + ` ORDER BY eventid`)
+    var actions = await client.query(`SELECT eventid, eventaction, eventtextsuccess, eventtextfail, eventreaction, eventitem, eventcheck FROM projecttwo.mapevent WHERE mapnodeconnection = ` + result.rows[0].currentlocation + ` ORDER BY eventid`)
     
     //select action called by user
     var action = {locName: "ERROR", locText: "Cannot find action called"}
@@ -143,27 +143,51 @@ async function triggerAction (req, res) {
     /**********
     * !! EVENT REACTION KEY !!
     * 1 - ACQUIRE ITEM (check if item is already in inv)
-    * 2 - CHECK FOR ITEM .eventitem IS ACQUIRED .eventitemtwo IS NEEDED
-    * 3 - SUCCESS if/if not (IF item do X IF NOT item do Y)
-    * 4 - DO NOTHING event doesn't do anythying send back text (red herring event)
+    * 2 - CHECK FOR ITEM + EXPEND (.eventitem IS ACQUIRED .eventcheck IS NEEDED + USED)
+    * 3 - CHECK FOR ITEM + DON'T EXPEND (.eventitem IS ACQUIRED .eventcheck IS NEEDED)
+    * 4 - SUCCESS if/if not (IF item do X IF NOT item do Y)
+    * 5 - DO NOTHING event doesn't do anythying send back text (red herring event)
     **********/
     switch(res.locals.actionInfo.eventreaction) {
       case 1:
-        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+        //DON'T HAVE ITEM OR PERMUTATION
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND (itemid = ` + res.locals.actionInfo.eventitem + ` OR itemid = ` + res.locals.actionInfo.eventcheck + `)`)
 
         if(inventory.rowCount > 0){
           res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextfail})
           res.end()
         }else{
+          //GIVE PICKED UP ITEM
           client.query(`INSERT INTO projecttwo.invtoitem (invid, itemid) VALUES (` + res.locals.invid + `, ` + res.locals.actionInfo.eventitem + `)`)
           res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
           res.end()  
         }
         break;
       case 2:
-        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+        //REQUIRED ITEM CHECK
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventcheck)
         
         if(inventory.rowCount > 0){
+          //GIVE PICKED UP ITEM
+          client.query(`INSERT INTO projecttwo.invtoitem (invid, itemid) VALUES (` + res.locals.invid + `, ` + res.locals.actionInfo.eventitem + `)`)
+          //DELETE EXPENDED ITEM
+          client.query(`DELETE FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventcheck)
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
+          res.end()
+        }else{
+          res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextfail})
+          res.end()  
+        }
+        break;
+      case 3:
+        //REQUIRED ITEM CHECK
+        var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventcheck)
+        //DON"T HAVE ALREADY
+        var itemCheck = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
+        
+        if(inventory.rowCount > 0 && itemCheck.rowCount == 0){
+          //GIVE PICKED UP ITEM
+          client.query(`INSERT INTO projecttwo.invtoitem (invid, itemid) VALUES (` + res.locals.invid + `, ` + res.locals.actionInfo.eventitem + `)`)
           res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
           res.end()
         }else{
@@ -171,7 +195,8 @@ async function triggerAction (req, res) {
           res.end()  
         }
         break;  
-      case 3:
+      case 4:
+        //IF ELSE USING ITEM AS CHECK
         var inventory = await client.query(`SELECT invid, itemid FROM projecttwo.invtoitem WHERE invid = ` + res.locals.invid + ` AND itemid = ` + res.locals.actionInfo.eventitem)
         
         if(inventory.rowCount > 0){
@@ -182,7 +207,7 @@ async function triggerAction (req, res) {
           res.end()  
         }
         break;
-      case 4:
+      case 5:
         res.send({locName: res.locals.actionInfo.eventaction, locText: res.locals.actionInfo.eventtextsuccess})
         res.end()
         break;
