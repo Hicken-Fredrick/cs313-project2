@@ -20,6 +20,9 @@ express()
 //handle intial page call
   .get('/', startUp)
 
+//handle new game button
+  .get('/newGame', newGame)
+
 //handle the move north button call
   .get('/moveNorth', getLocation, moveAndSend)
 
@@ -38,6 +41,10 @@ express()
 //always last
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
 
+/*
+Gathers basic data to display current game contents
+essentially this calls the last save point of the player
+*/
 async function startUp (req, res){
   const client = await pool.connect()
     try {
@@ -61,6 +68,19 @@ async function startUp (req, res){
     }
 }
 
+/*
+As players can only have 1 active game at a time
+this function will delete the game and corresponding content
+then it will create a new game and send the first response to the player
+*/
+async function newGame (req, res) {
+  console.log("NEW GAME!")
+}
+
+/*
+Grabs data needed for movement, including current location and action events
+it then sets the direction the player wished to move through the button request
+*/
 async function getLocation (req, res, next) {
   //get client
   const client = await pool.connect()
@@ -97,6 +117,10 @@ async function getLocation (req, res, next) {
   next()
 }
 
+/*
+This function grabs data about the location to make sure that the call was legitmate
+after verifying the call it will pass off data to the action trigger
+*/
 async function handleAction (req, res, next) {
   //checkout client
   const client = await pool.connect()
@@ -136,6 +160,10 @@ async function handleAction (req, res, next) {
   }
 }
 
+/*
+this handles action calls and seperates them
+the different cases are contained below
+*/
 async function triggerAction (req, res) {
   //checkout client
   const client = await pool.connect()
@@ -222,6 +250,10 @@ async function triggerAction (req, res) {
   }
 }
 
+/*
+This will move the player, given the data saved in location
+it will then send a response about the location the player landed
+*/
 async function moveAndSend (req, res) {
   //get client
   const client = await pool.connect()
