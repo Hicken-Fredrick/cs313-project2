@@ -76,6 +76,22 @@ $('#gameEvents').on("click", ".event", function (){
     }
   });
 });
+  
+//handle new game call
+$('#newGame').click(() => {
+  $.ajax({
+    url: `/newGame`,
+    type: "GET",
+    success: res => {
+      $("#gameLog").html('NEW GAME STARTED!');
+      if(res.actions != null) {
+        writeGameActions(res.actions);
+      }
+      writeGameLog(res.locName, res.locText);
+      scrollToBottom();
+    }
+  });
+});
 
 // !!  MODULAR CODE BELOW  !!
 function writeGameLog(locName, locText) {

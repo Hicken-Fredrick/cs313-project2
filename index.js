@@ -5,6 +5,9 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 require('dotenv').config();
 const user = 1;
+const map = 1;
+const herohp = 5;
+const heromp = 5;
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -21,7 +24,7 @@ express()
   .get('/', startUp)
 
 //handle new game button
-  .get('/newGame', newGame)
+  .get('/newGame', newGame, getLocation, moveAndSend)
 
 //handle the move north button call
   .get('/moveNorth', getLocation, moveAndSend)
@@ -73,8 +76,49 @@ As players can only have 1 active game at a time
 this function will delete the game and corresponding content
 then it will create a new game and send the first response to the player
 */
-async function newGame (req, res) {
-  console.log("NEW GAME!")
+async function newGame (req, res, next) {
+  //get client
+  const client = await pool.connect()
+  try {
+    //grab game data for deletion
+    var result = await client.query(`SELECT heroid, invid FROM projecttwo.game WHERE playerid = ` + user)
+    console.log('location: ', JSON.stringify(result.rows))
+
+    //delete game
+    client.query(`DELETE FROM projecttwo.game WHERE playerid = ` + user)
+    
+    //delete hero
+    client.query(`DELETE FROM projecttwo.hero WHERE heroid = ` + result.rows[0].heroid)
+    
+    //empty inventory
+    client.query(`DELETE FROM projecttwo.invtoitem WHERE invid = ` + result.rows[0].invid)
+    
+    //delete inventory
+    client.query(`DELETE FROM projecttwo.inventory WHERE invid = ` + result.rows[0].invid)
+
+    
+    
+
+    //now create pieces needed for new game
+    var hero = await client.query(`INSERT INTO projecttwo.hero (herohp, heromp) VALUES (${herohp}, ${heromp}) RETURNING heroid`)
+    var inv = await client.query(`INSERT INTO projecttwo.inventory (invname) VALUES ('Player${user} Inventory') RETURNING invid`)
+    console.log(hero)
+    console.log(inv)
+    var newHero = Number(hero.rows[0].heroid)
+    var newInv = Number(inv.rows[0].invid)
+    console.log(`user = ${user} map = ${map} inv = ${newInv} hero = ${newHero}`)
+    //create new game
+    var game = await client.query(`INSERT INTO projecttwo.game (playerid, mapid, invid, heroid, currentlocation) VALUES (${user}, ${map}, ${newInv}, ${newHero}, 1) RETURNING currentlocation`)
+    
+    //new game made and called
+    console.log("NEW GAME!")
+    
+    //move on
+    next()
+  }finally{
+    //release client
+    client.release()
+  }
 }
 
 /*
@@ -92,7 +136,9 @@ async function getLocation (req, res, next) {
   //save the location of the player
   res.locals.locationNum = result.rows[0].currentlocation
   console.log('location: ', res.locals.locationNum)
-  result = await client.query(`SELECT node` + req.query.direction + ` FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+  if (req.query.direction != null) {
+    result = await client.query(`SELECT node` + req.query.direction + ` FROM projecttwo.mapnodes WHERE nodeid = ` + res.locals.locationNum)
+  }
   
   //check for facing
   switch(req.query.direction) {
@@ -278,7 +324,7 @@ async function moveAndSend (req, res) {
   }catch (error) {
     console.log(error) 
   }finally{
-      //release client
-      client.release()
+    //release client
+    client.release()
   }
 }
